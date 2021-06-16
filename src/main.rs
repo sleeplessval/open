@@ -2,7 +2,7 @@ use std::{
 	fs::read_to_string,
 	env::{args, current_dir, var},
 	path::Path,
-	process::{Command, Child, ChildStdin, ChildStdout, Stdio}
+	process::{Command, Stdio}
 };
 
 use configparser::ini::Ini;
