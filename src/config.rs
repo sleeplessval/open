@@ -33,19 +33,20 @@ impl Config {
 		let mut path_local = i_path_local.as_path();
 		let root = Path::new("/");
 		let mut local: Option<Ini> = None;
-		while !path_local.exists() {
+		loop {
 			if dir_local == root {
 				break;
 			}
-			dir_local = dir_local.parent().unwrap();
-			i_path_local = dir_local.join(".open");
-			path_local = i_path_local.as_path();
 			if path_local.exists() {
 				let i_local = read_to_string(path_local).unwrap();
 				let mut tmp = Ini::new();
 				tmp.read(i_local).ok();
 				local = Some(tmp);
+				break;
 			}
+			dir_local = dir_local.parent().unwrap();
+			i_path_local = dir_local.join(".open");
+			path_local = i_path_local.as_path();
 		}
 
 		if global.is_none() && local.is_none() {
