@@ -1,42 +1,17 @@
 use std::{
-	fs::read_to_string,
-	env::{args, current_dir, var},
+	env::{args, current_dir},
 	path::Path,
 	process::{Command, Stdio}
 };
 
-use configparser::ini::Ini;
+mod config;
+use config::Config;
 
 fn main() {
 	// Prepare config file
 	let i_dir = current_dir().unwrap();
-	let mut dir = i_dir.as_path();
-	let mut i_path = dir.join(".open");
-	let mut path = i_path.as_path();
-	let root = Path::new("/");
-	while !path.exists() {
-		if dir == root {
-			// If we hit root while propagating, default to the
-			// user config.
-			let i_dir = String::from(var("HOME").ok().unwrap());
-			dir = Path::new(i_dir.as_str());
-			i_path = dir.join(".config/open.conf");
-			path = i_path.as_path();
-			if path.exists() {
-				break;
-			} else {
-				println!("No configuration found.");
-				return;
-			}
-		}
-		dir = dir.parent().unwrap();
-		i_path = dir.join(".open");
-		path = i_path.as_path();
-	}
-	let ini_str = read_to_string(path).unwrap();
-	let mut config = Ini::new();
-	config.read(ini_str).ok();
-	dir = i_dir.as_path();
+	let dir = i_dir.as_path();
+	let config = Config::new();
 
 	let args: Vec<String> = args().collect();
 
