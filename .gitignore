@@ -2,3 +2,4 @@
 .goto
 .open
 tmp
+Cargo.lock
