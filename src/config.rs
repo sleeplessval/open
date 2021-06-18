@@ -63,20 +63,20 @@ impl Config {
 	pub fn get(&self, section: &str, key: &str) -> Option<String> {
 		let mut output: Option<String> = None;
 		if self.local.is_some() {
-			output = self.local.clone().unwrap().get(section, key);
+			output = self.local.as_ref().unwrap().get(section, key);
 		}
 		if output.is_none() && self.global.is_some() {
-			output = self.global.clone().unwrap().get(section, key);
+			output = self.global.as_ref().unwrap().get(section, key);
 		}
 		return output;
 	}
 	pub fn getbool(&self, section: &str, key: &str) -> Result<Option<bool>, String> {
 		let mut output = Ok(None);
 		if self.local.is_some() {
-			output = self.local.clone().unwrap().getbool(section, key);
+			output = self.local.as_ref().unwrap().getbool(section, key);
 		}
 		if output.clone().ok().is_none() && self.global.is_some() {
-			output = self.global.clone().unwrap().getbool(section, key);
+			output = self.global.as_ref().unwrap().getbool(section, key);
 		}
 		return output;
 	}
