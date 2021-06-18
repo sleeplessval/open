@@ -13,7 +13,39 @@ fn main() {
 	let dir = i_dir.as_path();
 	let config = Config::new();
 
+	// Parse arguments and handle them.
 	let args: Vec<String> = args().collect();
+
+	let mut error: Option<String> = Some("open: missing file operand.".to_string());
+	for arg in &args[1..] {
+		match arg.as_str() {
+			"-h" |
+			"--help" => {
+				println!("open
+Valerie Wolfe <sleeplessval@gmail.com>
+A Linux implementation of the \"open\" command on Mac OS written in Rust and easily configurable.
+
+USAGE:
+		open [FLAGS] [FILE]
+
+FLAGS:
+		-h, --help			Prints this help text
+");
+				return;
+			},
+			_ => {
+				if error.is_none() {
+					error = Some("open: too many arguments.".to_string());
+				} else {
+					error = None;
+				}
+			}
+		}
+	}
+	if error.is_some() {
+		println!("{}", error.unwrap());
+		return;
+	}
 
 	let default = ".".to_string();
 	let arg_target = args.get(1);
