@@ -1,7 +1,7 @@
 use std::{
 	env::{args, current_dir},
 	path::Path,
-	process::{Command, Stdio}
+	process::{Command, exit, Stdio}
 };
 
 mod config;
@@ -20,8 +20,8 @@ fn main() {
 	let i_target = arg_target.unwrap_or(&default);
 	let target = Path::new(i_target);
 	if !target.exists() {
-		println!("\"{}\" does not exist.", i_target);
-		return;
+		println!("open: \"{}\" does not exist.", i_target);
+		exit(1);
 	}
 	let i_ext = target.extension();
 	let i_filename: String;
@@ -43,11 +43,11 @@ fn main() {
 	let i_exe = config.get(ext, "command");
 	if i_exe.is_none() {
 		match ext {
-			"open" => {},
-			"dir" => println!("No command specified for directories."),
-			_ => println!("No command specified for \"{}\" files.", ext)
+			"open" => println!("open: no zero-parameter command specified."),
+			"dir" => println!("open: no command specified for directories."),
+			_ => println!("open: no command specified for \"{}\" files.", ext)
 		}
-		return;
+		exit(1);
 	}
 	let exe = i_exe.unwrap();
 	let mut parts = exe.split(" ");
