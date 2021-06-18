@@ -8,7 +8,9 @@ use configparser::ini::Ini;
 
 pub struct Config {
 	pub local: Option<Ini>,
-	pub global: Option<Ini>
+	pub global: Option<Ini>,
+	local_path: Option<String>,
+	global_path: Option<String>
 }
 
 impl Config {
@@ -53,10 +55,24 @@ impl Config {
 			panic!("No configuration found.");
 		}
 
-		// Prepare loop condition
+		// prepare path vars
+		let global_path: Option<String>;
+		if global.is_some() {
+			global_path = Some(i_dir_global.to_string());
+		} else {
+			global_path = None
+		}
+		let local_path: Option<String>;
+		if local.is_some() {
+			local_path = Some(dir_local.to_str().unwrap().to_string());
+		} else {
+			local_path = None;
+		}
 		let output = Config {
 			global,
-			local
+			local,
+			local_path,
+			global_path
 		};
 		return output;
 	}
@@ -79,5 +95,34 @@ impl Config {
 			output = self.global.as_ref().unwrap().getbool(section, key);
 		}
 		return output;
+	}
+	pub fn add(&mut self, section: &str, key: &str, value: String) {
+		let mut ini: Ini;
+		let local = self.local.is_some();
+		if local {
+			ini = self.local.clone().unwrap();
+		} else {
+			ini = self.global.clone().unwrap();
+		}
+		ini.set(section, key, Some(value));
+		if local{
+			self.local = Some(ini);
+		} else {
+			self.global = Some(ini);
+		}
+	}
+	pub fn add_global(&mut self, section: &str, key: &str, value: String) {
+		let mut global = self.global.clone().unwrap();
+		global.set(section, key, Some(value));
+		self.global = Some(global);
+	}
+	pub fn write(&self) {
+		let mut path = self.local_path.as_ref();
+		if path.is_some() {
+			self.local.as_ref().unwrap().write(path.unwrap().as_str()).ok();
+			return;
+		}
+		path = self.global_path.as_ref();
+		self.global.as_ref().unwrap().write(path.unwrap().as_str()).ok();
 	}
 }

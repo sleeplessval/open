@@ -1,7 +1,7 @@
 use std::{
 	env::{args, current_dir},
 	path::Path,
-	process::{Command, Stdio}
+	process::{Command, exit, Stdio}
 };
 
 mod config;
@@ -11,7 +11,7 @@ fn main() {
 	// Prepare config file
 	let i_dir = current_dir().unwrap();
 	let dir = i_dir.as_path();
-	let config = Config::new();
+	let mut config = Config::new();
 
 	// Parse arguments and handle them.
 	let args: Vec<String> = args().collect();
@@ -27,13 +27,31 @@ Valerie Wolfe <sleeplessval@gmail.com>
 A Linux implementation of the \"open\" command on Mac OS written in Rust and easily configurable.
 
 USAGE:
-		open [FLAGS] [FILE]
+		open [FLAGS] [OPERAND]
 
 FLAGS:
 		-h, --help			Prints this help text
+		-a, --add			Add a handler for a operand type
 ");
 				return;
 			},
+			"-a" |
+			"--add" => {
+				if args.len() < 4 {
+					println!("open: too few arguments.");
+					exit(1);
+				}
+				let ext = args.get(2).unwrap();
+				let exe = args.get(3).unwrap();
+				let tmp = args.get(4);
+				let shell = tmp.is_some() && tmp.unwrap() == "shell";
+				config.add(ext, "command", exe.to_string());
+				if shell {
+					config.add(ext, "shell", "true".to_string());
+				}
+				config.write();
+				return;
+			}
 			_ => {
 				if file_operand {
 					error = Some("open: too many file operands.".to_string());
@@ -45,16 +63,15 @@ FLAGS:
 	}
 	if error.is_some() {
 		println!("{}", error.unwrap());
-		return;
+		exit(1);
 	}
-
 	let default = ".".to_string();
 	let arg_target = args.get(1);
 	let i_target = arg_target.unwrap_or(&default);
 	let target = Path::new(i_target);
 	if !target.exists() {
-		println!("\"{}\" does not exist.", i_target);
-		return;
+		println!("open: \"{}\" does not exist.", i_target);
+		exit(1);
 	}
 	let i_ext = target.extension();
 	let i_filename: String;
@@ -76,11 +93,11 @@ FLAGS:
 	let i_exe = config.get(ext, "command");
 	if i_exe.is_none() {
 		match ext {
-			"open" => {},
-			"dir" => println!("No command specified for directories."),
-			_ => println!("No command specified for \"{}\" files.", ext)
+			"open" => println!("open: no zero-operand command specified."),
+			"dir" => println!("open: no command specified for directories."),
+			_ => println!("open: no command specified for \"{}\" files.", ext)
 		}
-		return;
+		exit(1);
 	}
 	let exe = i_exe.unwrap();
 	let mut parts = exe.split(" ");
@@ -104,4 +121,8 @@ FLAGS:
 		.stderr(Stdio::null());
 		command.spawn().ok();
 	}
+}
+
+fn get_ext() {
+
 }
