@@ -16,7 +16,8 @@ fn main() {
 	// Parse arguments and handle them.
 	let args: Vec<String> = args().collect();
 
-	let mut error: Option<String> = Some("open: missing file operand.".to_string());
+	let mut error: Option<String> = None;
+	let mut file_operand = false;
 	for arg in &args[1..] {
 		match arg.as_str() {
 			"-h" |
@@ -34,10 +35,10 @@ FLAGS:
 				return;
 			},
 			_ => {
-				if error.is_none() {
-					error = Some("open: too many arguments.".to_string());
+				if file_operand {
+					error = Some("open: too many file operands.".to_string());
 				} else {
-					error = None;
+					file_operand = true;
 				}
 			}
 		}
