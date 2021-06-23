@@ -58,13 +58,13 @@ impl Config {
 		// prepare path vars
 		let global_path: Option<String>;
 		if global.is_some() {
-			global_path = Some(i_dir_global.to_string());
+			global_path = Some(path_global.to_str().unwrap().to_string());
 		} else {
 			global_path = None
 		}
 		let local_path: Option<String>;
 		if local.is_some() {
-			local_path = Some(dir_local.to_str().unwrap().to_string());
+			local_path = Some(dir_local.join(".open").to_str().unwrap().to_string());
 		} else {
 			local_path = None;
 		}
@@ -116,13 +116,13 @@ impl Config {
 		global.set(section, key, Some(value));
 		self.global = Some(global);
 	}
-	pub fn write(&self) {
+	pub fn write(&self) -> std::io::Result<()> {
 		let mut path = self.local_path.as_ref();
 		if path.is_some() {
-			self.local.as_ref().unwrap().write(path.unwrap().as_str()).ok();
-			return;
+			let result = self.local.as_ref().unwrap().write(path.unwrap().as_str());
+			return result;
 		}
 		path = self.global_path.as_ref();
-		self.global.as_ref().unwrap().write(path.unwrap().as_str()).ok();
+		self.global.as_ref().unwrap().write(path.unwrap().as_str())
 	}
 }

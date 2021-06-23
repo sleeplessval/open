@@ -45,11 +45,12 @@ FLAGS:
 				let exe = args.get(3).unwrap();
 				let tmp = args.get(4);
 				let shell = tmp.is_some() && tmp.unwrap() == "shell";
+				println!("{} {} {}", ext, exe, shell);
 				config.add(ext, "command", exe.to_string());
 				if shell {
 					config.add(ext, "shell", "true".to_string());
 				}
-				config.write();
+				config.write().ok();
 				return;
 			}
 			_ => {
@@ -121,8 +122,4 @@ FLAGS:
 		.stderr(Stdio::null());
 		command.spawn().ok();
 	}
-}
-
-fn get_ext() {
-
 }
