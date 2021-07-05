@@ -105,7 +105,6 @@ FLAGS:
 	let i_exe = config.get(ext, "command");
 	if i_exe.is_none() {
 		match ext {
-			"open" => println!("open: no zero-operand command specified."),
 			"dir" => println!("open: no command specified for directories."),
 			_ => println!("open: no command specified for \"{}\" files.", ext)
 		}
