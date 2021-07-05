@@ -9,8 +9,8 @@ use configparser::ini::Ini;
 pub struct Config {
 	pub local: Option<Ini>,
 	pub global: Option<Ini>,
-	local_path: Option<String>,
-	global_path: Option<String>
+	pub local_path: Option<String>,
+	pub global_path: Option<String>
 }
 
 impl Config {

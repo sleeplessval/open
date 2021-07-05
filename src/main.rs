@@ -30,8 +30,9 @@ USAGE:
 		open [FLAGS] [OPERAND]
 
 FLAGS:
-		-h, --help			Prints this help text
-		-a, --add			Add a handler for a operand type
+		-h, --help		Prints this help text
+		-a, --add		Add a handler for a operand type
+		-p, --path		Prints the config path used
 ");
 				return;
 			},
@@ -52,7 +53,17 @@ FLAGS:
 				}
 				config.write().ok();
 				return;
-			}
+			},
+			"-p" |
+			"--path" => {
+				let local = config.local_path;
+				if local.is_some() {
+					println!("{}", local.unwrap());
+				} else {
+					println!("{}", config.global_path.unwrap());
+				}
+				return;
+			},
 			_ => {
 				if file_operand {
 					error = Some("open: too many file operands.".to_string());
