@@ -11,10 +11,72 @@ fn main() {
 	// Prepare config file
 	let i_dir = current_dir().unwrap();
 	let dir = i_dir.as_path();
-	let config = Config::new();
+	let mut config = Config::new();
 
+	// Parse arguments and handle them.
 	let args: Vec<String> = args().collect();
 
+	let mut error: Option<String> = None;
+	let mut file_operand = false;
+	for arg in &args[1..] {
+		match arg.as_str() {
+			"-h" |
+			"--help" => {
+				println!("open
+Valerie Wolfe <sleeplessval@gmail.com>
+A Linux implementation of the \"open\" command on Mac OS written in Rust and easily configurable.
+
+USAGE:
+		open [FLAGS] [OPERAND]
+
+FLAGS:
+		-h, --help		Prints this help text
+		-a, --add		Add a handler for a operand type
+		-p, --path		Prints the config path used
+");
+				return;
+			},
+			"-a" |
+			"--add" => {
+				if args.len() < 4 {
+					println!("open: too few arguments.");
+					exit(1);
+				}
+				let ext = args.get(2).unwrap();
+				let exe = args.get(3).unwrap();
+				let tmp = args.get(4);
+				let shell = tmp.is_some() && tmp.unwrap() == "shell";
+				println!("{} {} {}", ext, exe, shell);
+				config.add(ext, "command", exe.to_string());
+				if shell {
+					config.add(ext, "shell", "true".to_string());
+				}
+				config.write().ok();
+				return;
+			},
+			"-p" |
+			"--path" => {
+				let local = config.local_path;
+				if local.is_some() {
+					println!("{}", local.unwrap());
+				} else {
+					println!("{}", config.global_path.unwrap());
+				}
+				return;
+			},
+			_ => {
+				if file_operand {
+					error = Some("open: too many file operands.".to_string());
+				} else {
+					file_operand = true;
+				}
+			}
+		}
+	}
+	if error.is_some() {
+		println!("{}", error.unwrap());
+		exit(1);
+	}
 	let default = ".".to_string();
 	let arg_target = args.get(1);
 	let i_target = arg_target.unwrap_or(&default);
@@ -43,7 +105,6 @@ fn main() {
 	let i_exe = config.get(ext, "command");
 	if i_exe.is_none() {
 		match ext {
-			"open" => println!("open: no zero-parameter command specified."),
 			"dir" => println!("open: no command specified for directories."),
 			_ => println!("open: no command specified for \"{}\" files.", ext)
 		}
