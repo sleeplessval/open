@@ -8,6 +8,8 @@ For example, for
 [open]
 # zero-operand command
 command = atom .
+# use $EDITOR to edit files without specified commands?
+use_editor = true
 
 [.md]
 command = typora

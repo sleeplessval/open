@@ -1,5 +1,5 @@
 use std::{
-	env::{args, current_dir},
+	env::{args, current_dir, var},
 	path::Path,
 	process::{Command, exit, Stdio}
 };
@@ -104,11 +104,32 @@ FLAGS:
 	}
 	let i_exe = config.get(ext, "command");
 	if i_exe.is_none() {
-		match ext {
-			"dir" => println!("open: no command specified for directories."),
-			_ => println!("open: no command specified for \"{}\" files.", ext)
+		let use_editor = config.getbool("open", "use_editor");
+		if use_editor.is_ok() && use_editor.ok().unwrap().unwrap() {
+			let i_editor = var("EDITOR");
+			if i_editor.is_err() {
+				println!("open: encountered an error trying to access $EDITOR");
+				exit(1);
+			}
+			let editor = i_editor.ok().unwrap();
+			if editor.is_empty() {
+				println!("open: $EDITOR is not defined.");
+				exit(1);
+			}
+			let mut command = Command::new(editor);
+			command.args(vec![i_target]);
+			command.stdout(Stdio::inherit())
+			.stderr(Stdio::inherit())
+			.stdin(Stdio::inherit());
+			command.output().ok();
+			exit(0);
+		} else {
+			match ext {
+				"dir" => println!("open: no command specified for directories."),
+				_ => println!("open: no command specified for \"{}\" files.", ext)
+			}
+			exit(1);
 		}
-		exit(1);
 	}
 	let exe = i_exe.unwrap();
 	let mut parts = exe.split(" ");
