@@ -22,7 +22,7 @@ fn main() {
 		match arg.as_str() {
 			"-h" |
 			"--help" => {
-				println!("open
+				println!("open v0.4.0
 Valerie Wolfe <sleeplessval@gmail.com>
 A Linux implementation of the \"open\" command on Mac OS written in Rust and easily configurable.
 
@@ -33,6 +33,7 @@ FLAGS:
 		-h, --help		Prints this help text
 		-a, --add		Add a handler for a operand type
 		-p, --path		Prints the config path used
+		-v, --version	Prints the version number
 ");
 				return;
 			},
