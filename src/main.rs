@@ -22,7 +22,7 @@ fn main() {
 		match arg.as_str() {
 			"-h" |
 			"--help" => {
-				println!("open v0.4.0
+				println!("open v0.5.0
 Valerie Wolfe <sleeplessval@gmail.com>
 A Linux implementation of the \"open\" command on Mac OS written in Rust and easily configurable.
 
@@ -106,7 +106,7 @@ FLAGS:
 	let i_exe = config.get(ext, "command");
 	if i_exe.is_none() {
 		let use_editor = config.getbool("open", "use_editor");
-		if use_editor.is_ok() && use_editor.ok().unwrap().unwrap() {
+		if use_editor.unwrap_or(false) {
 			let i_editor = var("EDITOR");
 			if i_editor.is_err() {
 				println!("open: encountered an error trying to access $EDITOR");
@@ -143,7 +143,7 @@ FLAGS:
 	command.args(param)
 	.current_dir(dir);
 
-	let is_sh = config.getbool(ext, "shell").ok().unwrap_or(Some(false)).unwrap_or(false);
+	let is_sh = config.getbool(ext, "shell").unwrap_or(false);
 	if is_sh {
 		command.stdout(Stdio::inherit())
 		.stderr(Stdio::inherit())

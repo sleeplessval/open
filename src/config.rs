@@ -86,13 +86,15 @@ impl Config {
 		}
 		return output;
 	}
-	pub fn getbool(&self, section: &str, key: &str) -> Result<Option<bool>, String> {
-		let mut output = Ok(None);
+	pub fn getbool(&self, section: &str, key: &str) -> Option<bool> {
+		let mut output = None;
 		if self.local.is_some() {
-			output = self.local.as_ref().unwrap().getbool(section, key);
+			let i_out = self.local.as_ref().unwrap().getbool(section, key);
+			output = i_out.unwrap_or(None);
 		}
-		if output.clone().ok().is_none() && self.global.is_some() {
-			output = self.global.as_ref().unwrap().getbool(section, key);
+		if output.is_none() && self.global.is_some() {
+			let i_out = self.global.as_ref().unwrap().getbool(section, key);
+			output = i_out.unwrap_or(None);
 		}
 		return output;
 	}
@@ -105,7 +107,7 @@ impl Config {
 			ini = self.global.clone().unwrap();
 		}
 		ini.set(section, key, Some(value));
-		if local{
+		if local {
 			self.local = Some(ini);
 		} else {
 			self.global = Some(ini);
