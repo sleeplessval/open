@@ -1,6 +1,6 @@
 # open
 
-A Rust implementation of MacOS's `open` command (`xdg-open`). It's written to be quickly and easily customizable, features separate local and global configs, and a zero-operand command allowing the user to specify how files should be opened differently, and for opening a project, etc.
+A Rust reimplementation of `xdg-open` command. It's written to be quickly and easily customizable, features separate local and global configs, and a zero-operand command allowing the user to specify how files should be opened differently, and for opening a project, etc.
 
 For example, for
 

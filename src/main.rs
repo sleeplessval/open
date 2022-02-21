@@ -24,7 +24,7 @@ fn main() {
 			"--help" => {
 				println!("open v0.5.0
 Valerie Wolfe <sleeplessval@gmail.com>
-A Linux implementation of the \"open\" command on Mac OS written in Rust and easily configurable.
+A Rust reimplementation of \"xdg-open\" configurable with a toml file.
 
 USAGE:
 		open [FLAGS] [OPERAND]
