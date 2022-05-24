@@ -22,9 +22,9 @@ fn main() {
 		match arg.as_str() {
 			"-h" |
 			"--help" => {
-				println!("open v0.5.0
+				println!("open v0.6.0
 Valerie Wolfe <sleeplessval@gmail.com>
-A Rust reimplementation of \"xdg-open\" configurable with a toml file.
+A Rust reimplementation of \"xdg-open\" configurable with an ini file.
 
 USAGE:
 		open [FLAGS] [OPERAND]

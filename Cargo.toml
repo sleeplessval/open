@@ -1,6 +1,6 @@
 [package]
 name = "open"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Valerie Wolfe <sleeplessval@gmail.com>"]
 edition = "2018"
 
@@ -8,3 +8,7 @@ edition = "2018"
 
 [dependencies]
 configparser = "3.0.0"
+
+[profile.release]
+strip = "debuginfo"
+
