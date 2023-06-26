@@ -1,157 +1,155 @@
 use std::{
-	env::{args, current_dir, var},
+	env::current_dir,
 	path::Path,
-	process::{Command, exit, Stdio}
+	process::{ Command, Stdio }
 };
 
+use pico_args::Arguments;
+use toml::value::{ Array, Value };
+
 mod config;
+mod error;
 use config::Config;
 
 fn main() {
-	// Prepare config file
+	let mut args = Arguments::from_env();
+
+	//	help flag		(-h / --help)
+	if args.contains(["-h", "--help"]) {
+		help_text();
+		return;
+	}
+	//	version flag	(-v / --version)
+	if args.contains(["-v", "--version"]) {
+		println!("{}", env!("CARGO_PKG_VERSION"));
+		return;
+	}
+
+	//	prepare configs
 	let i_dir = current_dir().unwrap();
 	let dir = i_dir.as_path();
-	let mut config = Config::new();
+	let config = Config::new();
 
-	// Parse arguments and handle them.
-	let args: Vec<String> = args().collect();
+	//	path flag		(-p / --path)
+	if args.contains(["-p", "--path"]) {
+		let local = config.local_path;
+		let global = config.global_path;
+		if local.is_some() {
+			println!("{}", local.unwrap());
+			return;
+		}
+		if global.is_some() {
+			println!("{}", global.unwrap());
+			return;
+		}
+		error::no_configs();
+		return;
+	}
 
-	let mut error: Option<String> = None;
-	let mut file_operand = false;
-	for arg in &args[1..] {
-		match arg.as_str() {
-			"-h" |
-			"--help" => {
-				println!("open v0.6.0
-Valerie Wolfe <sleeplessval@gmail.com>
-A Rust reimplementation of \"xdg-open\" configurable with an ini file.
+	//	get target
+	let arg_target = args.subcommand().unwrap();
+	let i_target = arg_target.unwrap_or(String::from("."));
+	let target = Path::new(&i_target);
+	if !target.exists() { error::not_found(&target); }
 
-USAGE:
-		open [FLAGS] [OPERAND]
+	//	get section
+	//	ordering: filename -> type (ext/dir)
+	let mut section = None;
 
-FLAGS:
-		-h, --help		Prints this help text
-		-a, --add		Add a handler for a operand type
-		-p, --path		Prints the config path used
-		-v, --version	Prints the version number
-");
-				return;
-			},
-			"-a" |
-			"--add" => {
-				if args.len() < 4 {
-					println!("open: too few arguments.");
-					exit(1);
-				}
-				let ext = args.get(2).unwrap();
-				let exe = args.get(3).unwrap();
-				let tmp = args.get(4);
-				let shell = tmp.is_some() && tmp.unwrap() == "shell";
-				println!("{} {} {}", ext, exe, shell);
-				config.add(ext, "command", exe.to_string());
-				if shell {
-					config.add(ext, "shell", "true".to_string());
-				}
-				config.write().ok();
-				return;
-			},
-			"-p" |
-			"--path" => {
-				let local = config.local_path;
-				if local.is_some() {
-					println!("{}", local.unwrap());
-				} else {
-					println!("{}", config.global_path.unwrap());
-				}
-				return;
-			},
-			_ => {
-				if file_operand {
-					error = Some("open: too many file operands.".to_string());
-				} else {
-					file_operand = true;
-				}
+	//	by exact filename
+	let filename = target.file_name();
+	if filename.is_some() {
+		let filename_section = config.get(filename.unwrap().to_str().unwrap());
+		if filename_section.is_some() {
+			section = filename_section;
+		}
+	}
+
+	//	handle types; dir first
+	if section.is_none() && target.is_dir() {
+		let dir_section = config.get("dir");
+		if dir_section.is_some() {
+			section = dir_section;
+		}
+	}
+
+	//	handle types; extensions second
+	if section.is_none() {
+		let extension = target.extension();
+		if extension.is_some() {
+			let extension = extension.unwrap().to_str();
+
+			//	pull extension array and filter matches
+			let i_macrosection: Option<Value> = config.get("extension");
+			let macrosection: Array = i_macrosection.unwrap().as_array().unwrap().to_owned();
+			let matches = macrosection.iter().filter(|value| {
+				let table = value.as_table().unwrap();
+				let i_target = table.get("match").unwrap();
+				let target = i_target.as_str();
+				target == extension
+			}).map(|value| value.to_owned() );
+
+			let sections: Vec<Value> = matches.collect();
+			if sections.len() > 0 {
+				section = sections.get(0).cloned();
 			}
 		}
 	}
-	if error.is_some() {
-		println!("{}", error.unwrap());
-		exit(1);
-	}
-	let default = ".".to_string();
-	let arg_target = args.get(1);
-	let i_target = arg_target.unwrap_or(&default);
-	let target = Path::new(i_target);
-	if !target.exists() {
-		println!("open: \"{}\" does not exist.", i_target);
-		exit(1);
-	}
-	let i_ext = target.extension();
-	let i_filename: String;
-	let ext: &str;
-	if target.is_dir() {
-		if arg_target.is_none() {
-			ext = "open";
-		} else {
-			ext = "dir";
-		}
-	} else {
-		if i_ext.is_none() {
-			i_filename = ["filename", target.file_name().unwrap().to_str().unwrap()].join(":");
-		} else {
-			i_filename = [".", i_ext.unwrap().to_str().unwrap()].join("");
-		}
-		ext = i_filename.as_str();
-	}
-	let i_exe = config.get(ext, "command");
-	if i_exe.is_none() {
-		let use_editor = config.getbool("open", "use_editor");
-		if use_editor.unwrap_or(false) {
-			let i_editor = var("EDITOR");
-			if i_editor.is_err() {
-				println!("open: encountered an error trying to access $EDITOR");
-				exit(1);
-			}
-			let editor = i_editor.ok().unwrap();
-			if editor.is_empty() {
-				println!("open: $EDITOR is not defined.");
-				exit(1);
-			}
-			let mut command = Command::new(editor);
-			command.args(vec![i_target]);
-			command.stdout(Stdio::inherit())
-			.stderr(Stdio::inherit())
-			.stdin(Stdio::inherit());
-			command.output().ok();
-			exit(0);
-		} else {
-			match ext {
-				"dir" => println!("open: no command specified for directories."),
-				_ => println!("open: no command specified for \"{}\" files.", ext)
-			}
-			exit(1);
-		}
-	}
-	let exe = i_exe.unwrap();
-	let mut parts = exe.split(" ");
-	let mut command = Command::new(parts.next().unwrap());
-	let mut param: Vec<&str> = vec![];
-	for part in parts {
-		param.push(part);
-	}
-	param.push(i_target);
-	command.args(param)
-	.current_dir(dir);
 
-	let is_sh = config.getbool(ext, "shell").unwrap_or(false);
-	if is_sh {
-		command.stdout(Stdio::inherit())
-		.stderr(Stdio::inherit())
-		.stdin(Stdio::inherit());
-		command.output().ok();
-	} else {
-		command.stdout(Stdio::null())
-		.stderr(Stdio::null());
-		command.spawn().ok();
+	//	default or fail on missing session
+	if section.is_none() {
+		let default = config.get("default");
+		if default.is_some() { section = default; }
+		else { error::no_section(target); }
+	}
+
+	//	unwrap our section
+	let properties = section.unwrap();
+
+	//	collect properties
+	let command = properties.get("command").unwrap().as_str().unwrap().to_string();
+	let shell = properties.get("shell").unwrap_or(&Value::Boolean(false)).as_bool().unwrap();
+
+	//	build child
+	let mut parts = command.split(" ");
+	let mut child = Command::new(parts.next().unwrap());
+	let mut param: Vec<&str> = parts.collect();
+	param.push(&i_target);
+	child
+		.args(param)
+		.current_dir(dir);
+
+	//	shell processes inherit stdio (and use `output()`)
+	if shell {
+		child
+			.stdin(Stdio::inherit())
+			.stdout(Stdio::inherit())
+			.stderr(Stdio::inherit());
+		child.output().ok();
+	}
+	//	non-shell processes should redirect to dev/null (and use `spawn()`)
+	else {
+		child
+			.stdin(Stdio::null())
+			.stdout(Stdio::null())
+			.stderr(Stdio::null());
+		child.spawn().ok();
 	}
 }
+
+pub fn help_text() {
+	println!("open v{}
+Valerie Wolfe <sleeplessval@gmail.com>
+A Rust reimagining of \"xdg-open\" configurable with an toml file.
+
+usage: open [flags] <target>
+
+flags:
+   -h, --help      Prints this help text
+   -p, --path      Prints the path to the config file
+   -v, --version   Prints the version number
+",
+	env!("CARGO_PKG_VERSION")
+	);
+}
+

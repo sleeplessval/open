@@ -4,11 +4,14 @@ use std::{
 	path::Path
 };
 
-use configparser::ini::Ini;
+use toml::{
+	Value,
+	map::Map
+};
 
 pub struct Config {
-	pub local: Option<Ini>,
-	pub global: Option<Ini>,
+	pub local: Option<Map<String, Value>>,
+	pub global: Option<Map<String, Value>>,
 	pub local_path: Option<String>,
 	pub global_path: Option<String>
 }
@@ -18,14 +21,14 @@ impl Config {
 		// Instantiate global config
 		let i_dir_global = String::from(var("HOME").ok().unwrap());
 		let dir_global = Path::new(i_dir_global.as_str());
-		let i_path_global = dir_global.join(".config/open.conf");
+		let i_path_global = dir_global.join(".config/open.toml");
 		let path_global = i_path_global.as_path();
-		let mut global: Option<Ini> = None;
+		let mut global = None;
 		if path_global.exists() {
-			let i_global = read_to_string(path_global).unwrap();
-			let mut tmp = Ini::new();
-			tmp.read(i_global).ok();
-			global = Some(tmp);
+			let raw_conf = read_to_string(path_global).unwrap();
+			let toml_conf: Value = toml::from_str(raw_conf.as_str()).unwrap();
+			let toml = toml_conf.as_table().unwrap();
+			global = Some(toml.to_owned());
 		}
 
 		// Instantiate local config, if it exists.
@@ -34,16 +37,16 @@ impl Config {
 		let mut i_path_local = dir_local.join(".open");
 		let mut path_local = i_path_local.as_path();
 		let root = Path::new("/");
-		let mut local: Option<Ini> = None;
+		let mut local = None;
 		loop {
 			if dir_local == root {
 				break;
 			}
 			if path_local.exists() {
-				let i_local = read_to_string(path_local).unwrap();
-				let mut tmp = Ini::new();
-				tmp.read(i_local).ok();
-				local = Some(tmp);
+				let raw_conf = read_to_string(path_local).unwrap();
+				let toml_conf: Value = toml::from_str(raw_conf.as_str()).unwrap();
+				let toml = toml_conf.as_table().unwrap();
+				local = Some(toml.to_owned());
 				break;
 			}
 			dir_local = dir_local.parent().unwrap();
@@ -76,55 +79,20 @@ impl Config {
 		};
 		return output;
 	}
-	pub fn get(&self, section: &str, key: &str) -> Option<String> {
-		let mut output: Option<String> = None;
+	pub fn get(&self, key: &str) -> Option<Value> {
+		let mut output: Option<Value> = None;
 		if self.local.is_some() {
-			output = self.local.as_ref().unwrap().get(section, key);
+			let result = self.local.as_ref().unwrap().get(key);
+			if result.is_some() {
+				output = Some(result.unwrap().to_owned());
+			}
 		}
 		if output.is_none() && self.global.is_some() {
-			output = self.global.as_ref().unwrap().get(section, key);
+			let result = self.global.as_ref().unwrap().get(key);
+			if result.is_some() {
+				output = Some(result.unwrap().to_owned());
+			}
 		}
 		return output;
-	}
-	pub fn getbool(&self, section: &str, key: &str) -> Option<bool> {
-		let mut output = None;
-		if self.local.is_some() {
-			let i_out = self.local.as_ref().unwrap().getbool(section, key);
-			output = i_out.unwrap_or(None);
-		}
-		if output.is_none() && self.global.is_some() {
-			let i_out = self.global.as_ref().unwrap().getbool(section, key);
-			output = i_out.unwrap_or(None);
-		}
-		return output;
-	}
-	pub fn add(&mut self, section: &str, key: &str, value: String) {
-		let mut ini: Ini;
-		let local = self.local.is_some();
-		if local {
-			ini = self.local.clone().unwrap();
-		} else {
-			ini = self.global.clone().unwrap();
-		}
-		ini.set(section, key, Some(value));
-		if local {
-			self.local = Some(ini);
-		} else {
-			self.global = Some(ini);
-		}
-	}
-	pub fn add_global(&mut self, section: &str, key: &str, value: String) {
-		let mut global = self.global.clone().unwrap();
-		global.set(section, key, Some(value));
-		self.global = Some(global);
-	}
-	pub fn write(&self) -> std::io::Result<()> {
-		let mut path = self.local_path.as_ref();
-		if path.is_some() {
-			let result = self.local.as_ref().unwrap().write(path.unwrap().as_str());
-			return result;
-		}
-		path = self.global_path.as_ref();
-		self.global.as_ref().unwrap().write(path.unwrap().as_str())
 	}
 }
