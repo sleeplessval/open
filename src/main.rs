@@ -1,7 +1,8 @@
 use std::{
 	env::current_dir,
+	io::{ stdout, IsTerminal },
 	path::Path,
-	process::{ Command, Stdio }
+	process::{ exit, Command, Stdio }
 };
 
 use pico_args::Arguments;
@@ -109,6 +110,11 @@ fn main() {
 	//	collect properties
 	let command = properties.get("command").unwrap().as_str().unwrap().to_string();
 	let shell = properties.get("shell").unwrap_or(&Value::Boolean(false)).as_bool().unwrap();
+
+	if !stdout().is_terminal() {
+		println!("{command} {i_target}");
+		exit(0);
+	}
 
 	//	build child
 	let mut parts = command.split(" ");
